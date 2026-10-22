@@ -1,3 +1,4 @@
+import { fakeQuote } from '../../lib/fakequote.js';
 import { performance } from 'perf_hooks';
 import os from 'os';
 
@@ -32,7 +33,7 @@ const handler = async (m, { conn }) => {
     text,
     buttons: [{ buttonId: '.ds', buttonText: { displayText: 'Pulisci sessioni' }, type: 1 }],
     headerType: 1,
-  }, { quoted: m.raw });
+  }, { quoted: fakeQuote('Stato bot') });
 };
 
 handler.help = ['ping'];

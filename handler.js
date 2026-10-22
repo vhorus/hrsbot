@@ -11,7 +11,7 @@ function matches(h, cmd) {
 export async function handler(sock, msg) {
   if (!msg.message || msg.key.fromMe) return;
 
-  const text = msg.message.conversation || msg.message.extendedTextMessage?.text || msg.message.buttonsResponseMessage?.selectedButtonId || '';
+  const text = msg.message.conversation || msg.message.extendedTextMessage?.text || msg.message.buttonsResponseMessage?.selectedButtonId || msg.message.listResponseMessage?.singleSelectReply?.selectedRowId || '';
   if (!text.startsWith(PREFIX)) return;
 
   const [cmd, ...args] = text.slice(PREFIX.length).trim().split(/\s+/);
@@ -24,10 +24,10 @@ export async function handler(sock, msg) {
     const meta = await sock.groupMetadata(m.chat);
     chatName = meta.subject;
   }
-  printMessage(m, chatName);
 
   const senderId = m.sender.split('@')[0].split(':')[0];
   const isOwner = global.owner.some(([number]) => String(number) === senderId);
+  printMessage(m, chatName, isOwner);
 
   if (plugin.owner && !isOwner) {
     return m.reply('𝐂𝐨𝐦𝐚𝐧𝐝𝐨 𝐫𝐢𝐬𝐞𝐫𝐯𝐚𝐭𝐨 𝐚𝐠𝐥𝐢 𝐨𝐰𝐧𝐞𝐫.');
