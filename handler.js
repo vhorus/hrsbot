@@ -21,9 +21,13 @@ export async function handler(sock, msg) {
   const m = await smsg(sock, msg, text, args);
   let chatName;
   if (m.isGroup) {
-    const meta = await sock.groupMetadata(m.chat);
-    chatName = meta.subject;
-  }
+    try {
+      const meta = await sock.groupMetadata(m.chat);
+      chatName = meta.subject;
+    } catch {
+      chatName = m.chat.split('@')[0];
+    }
+
 
   const senderId = m.sender.split('@')[0].split(':')[0];
   const isOwner = global.owner.some(([number]) => String(number) === senderId);
