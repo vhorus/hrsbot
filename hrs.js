@@ -1,6 +1,7 @@
 import './lib/db.js';
 import './config.js';
 import { handler } from './handler.js';
+import { startTelegramAdmin } from './lib/telegram.js';
 import makeWASocket, { useMultiFileAuthState, DisconnectReason, makeCacheableSignalKeyStore } from '@itsliaaa/baileys';
 import { fetchLatestWaWebVersion } from '@itsliaaa/baileys/lib/Utils/generics.js';
 import qrcode from 'qrcode-terminal';
@@ -41,10 +42,11 @@ async function loadPlugins(dir = join(__dirname, 'plugins')) {
       await loadPlugins(full);
     } else if (entry.name.endsWith('.js')) {
       const mod = await import(pathToFileURL(full).href + '?t=' + Date.now());
-      if (mod.default) {
-        mod.default._file = full;
-        plugins.push(mod.default);
-      }
+      const plugin = mod.default || (mod.before ? {} : null);
+      if (!plugin) continue;
+      if (mod.before) plugin.before = mod.before;
+      plugin._file = full;
+      plugins.push(plugin);
     }
   }
 }
@@ -53,21 +55,30 @@ function watchPlugins(dir = join(__dirname, 'plugins')) {
   watch(dir, { recursive: true }, async (_, filename) => {
     if (!filename || !filename.endsWith('.js')) return;
     const full = join(dir, filename);
-    if (!existsSync(full)) return;
+
+    if (!existsSync(full)) {
+      const idx = plugins.findIndex((p) => p._file === full);
+      if (idx >= 0) {
+        plugins.splice(idx, 1);
+        global.plugins = plugins;
+      }
+      return;
+    }
 
     try {
       const mod = await import(pathToFileURL(full).href + '?t=' + Date.now());
-      if (!mod.default) return;
-      mod.default._file = full;
+      const plugin = mod.default || (mod.before ? {} : null);
+      if (!plugin) return;
+      if (mod.before) plugin.before = mod.before;
+      plugin._file = full;
 
       const idx = plugins.findIndex((p) => p._file === full);
-      if (idx >= 0) plugins[idx] = mod.default;
-      else plugins.push(mod.default);
+      if (idx >= 0) plugins[idx] = plugin;
+      else plugins.push(plugin);
 
       global.plugins = plugins;
-      console.log(`[plugin] ricaricato: ${filename}`);
     } catch (err) {
-      console.error(`[plugin] errore ricaricando ${filename}:`, err);
+      console.error(err);
     }
   });
 }
@@ -123,14 +134,25 @@ async function start() {
     }
 
     if (connection === 'open') {
-      console.log('connesso a zozzap');
+      console.log('[WhatsApp] bot connesso.');
       rl.close();
+      if (global.telegram?.token && global.telegram?.ownerId) {
+        startTelegramAdmin(sock);
+      }
     }
   });
 
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
     if (type !== 'notify') return;
     for (const msg of messages) {
+      for (const plugin of global.plugins || []) {
+        if (typeof plugin.before !== 'function') continue;
+        try {
+          await plugin.before(sock, msg);
+        } catch (err) {
+          console.error(err);
+        }
+      }
       await handler(sock, msg);
     }
   });

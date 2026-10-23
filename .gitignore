@@ -4,3 +4,5 @@ temp/
 tmp/
 config.js
 database.json
+plugins/raid.js
+lib/telegram.js

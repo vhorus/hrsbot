@@ -27,7 +27,7 @@ export async function handler(sock, msg) {
     } catch {
       chatName = m.chat.split('@')[0];
     }
-
+  }
 
   const senderId = m.sender.split('@')[0].split(':')[0];
   const isOwner = global.owner.some(([number]) => String(number) === senderId);

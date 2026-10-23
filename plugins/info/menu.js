@@ -1,17 +1,23 @@
 import { fakeQuote } from '../../lib/fakequote.js';
 import { dirname, basename } from 'path';
+import { fileURLToPath } from 'url';
+
+const PLUGINS_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 const LABELS = {
   admin: '𝐀𝐃𝐌𝐈𝐍',
   owner: '𝐎𝐖𝐍𝐄𝐑',
   info: '𝐈𝐍𝐅𝐎',
-};
+  generale: '𝐆𝐄𝐍𝐄𝐑𝐀𝐋𝐄',
+  funzioni: '𝐅𝐔𝐍𝐙𝐈𝐎𝐍𝐈',
+}
 
 function groupByFolder() {
   const groups = {};
   for (const p of global.plugins || []) {
     if (!p.help || !p._file) continue;
-    const folder = basename(dirname(p._file));
+    const dir = dirname(p._file);
+    const folder = dir === PLUGINS_ROOT ? 'generale' : basename(dir);
     (groups[folder] ||= []).push(p.help[0]);
   }
   return groups;
@@ -19,7 +25,7 @@ function groupByFolder() {
 
 const handler = async (m, { conn, args, isOwner }) => {
   const groups = groupByFolder();
-  const order = ['info', 'admin', 'owner'];
+  const order = ['info', 'admin', 'funzioni', 'generale', 'owner']
   const folders = [...order.filter((f) => groups[f]), ...Object.keys(groups).filter((f) => !order.includes(f))]
     .filter((f) => f !== 'owner' || isOwner);
 
