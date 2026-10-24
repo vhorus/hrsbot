@@ -12,9 +12,11 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import readline from 'readline';
 
 const _log = console.log;
+const _warn = console.warn;
 const _info = console.info;
 const isSignalNoise = (args) => typeof args[0] === 'string' && /^(Closing|Opening|Removing|Migrating)/.test(args[0]);
 console.log = (...args) => { if (!isSignalNoise(args)) _log(...args); };
+console.warn = (...args) => { if (!isSignalNoise(args)) _warn(...args); };
 console.info = (...args) => { if (!isSignalNoise(args)) _info(...args); };
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

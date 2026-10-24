@@ -108,17 +108,21 @@ export async function before(sock, msg) {
   const ownForeign = ownCodesRaw.filter((c) => c !== ownCode)
   if (!ownForeign.length) return
 
-  let sender = msg.key.participantAlt || msg.key.participant || chat
-  if (sender.endsWith('@lid')) {
-    const match = meta.participants.find((p) => p.id === sender)
-    if (match?.phoneNumber) sender = match.phoneNumber
-  }
+  const participant = msg.key.participant || chat
+  const participantAlt = msg.key.participantAlt
 
-  const isSenderAdmin = meta.participants.some((p) => p.id === sender && p.admin)
-  if (isSenderAdmin) return
+  const participantEntry = meta.participants.find((p) =>
+    [p.id, p.phoneNumber].includes(participant) || (participantAlt && [p.id, p.phoneNumber].includes(participantAlt))
+  )
+
+  if (participantEntry?.admin) return
+
+  const senderNumber = (participantEntry?.phoneNumber || participantAlt || participant).split('@')[0].split(':')[0]
 
   const ownerNumber = global.owner?.[0]?.[0]
-  if (ownerNumber && sender.split('@')[0].split(':')[0] === ownerNumber) return
+  if (ownerNumber && senderNumber === ownerNumber) return
+
+  const sender = participantEntry?.id || participant
 
   await sock.sendMessage(chat, { delete: msg.key })
   await sock.groupParticipantsUpdate(chat, [sender], 'remove')
